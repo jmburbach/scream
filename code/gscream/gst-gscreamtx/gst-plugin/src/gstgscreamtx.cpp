@@ -73,7 +73,10 @@ enum
 {
   PROP_0,
   PROP_SILENT,
-  PROP_MEDIA_SRC
+  PROP_MEDIA_SRC,
+  PROP_MIN_BITRATE,
+  PROP_START_BITRATE,
+  PROP_MAX_BITRATE
 };
 #define DEST_HOST "127.0.0.1"
 
@@ -106,6 +109,18 @@ gst_g_scream_tx_class_init (GstgScreamTxClass * klass)
         "0=x264enc, 1=rpicamsrc, 2=uvch264src, 3=vaapih264enc, 4=omxh264enc",
         0, 4, 0,
         G_PARAM_READWRITE));
+  
+  g_object_class_install_property(gobject_class, PROP_MIN_BITRATE,
+		g_param_spec_uint("min-bitrate", "Minimum bitrate",	"Minimum bitrate",
+			100, 50000000, 1000000, G_PARAM_READWRITE));
+  
+  g_object_class_install_property(gobject_class, PROP_START_BITRATE,
+		g_param_spec_uint("start-bitrate", "Starting bitrate", "Staring bitrate",
+			100, 50000000, 10000000, G_PARAM_READWRITE));
+
+  g_object_class_install_property(gobject_class, PROP_MAX_BITRATE,
+		g_param_spec_uint("max-bitrate", "Maximum bitrate",	"Maximum bitrate",
+			100, 50000000, 50000000, G_PARAM_READWRITE));
 
   gst_element_class_set_details_simple(gstelement_class,
     "gScreamTx",
@@ -157,7 +172,9 @@ gst_g_scream_tx_init (GstgScreamTx * filter)
 
   filter->silent = TRUE;
 
-
+  filter->min_bitrate = 1000000;
+  filter->start_bitrate = 10000000;
+  filter->max_bitrate = 50000000;
 }
 
 static void
@@ -173,6 +190,15 @@ gst_g_scream_tx_set_property (GObject * object, guint prop_id,
     case PROP_MEDIA_SRC:
       filter->media_src = g_value_get_uint (value);
       break;
+	case PROP_MIN_BITRATE:
+	  filter->min_bitrate = g_value_get_uint(value);
+	  break;
+	case PROP_START_BITRATE:
+	  filter->start_bitrate = g_value_get_uint(value);
+	  break;
+	case PROP_MAX_BITRATE:
+	  filter->max_bitrate = g_value_get_uint(value);
+	  break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -189,6 +215,18 @@ gst_g_scream_tx_get_property (GObject * object, guint prop_id,
     case PROP_SILENT:
       g_value_set_boolean (value, filter->silent);
       break;
+    case PROP_MEDIA_SRC:
+      g_value_set_uint (value, filter->media_src);
+      break;
+	case PROP_MIN_BITRATE:
+	  g_value_set_uint(value, filter->min_bitrate);
+	  break;
+	case PROP_START_BITRATE:
+	  g_value_set_uint(value, filter->start_bitrate);
+	  break;
+	case PROP_MAX_BITRATE:
+	  g_value_set_uint(value, filter->max_bitrate);
+	  break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;

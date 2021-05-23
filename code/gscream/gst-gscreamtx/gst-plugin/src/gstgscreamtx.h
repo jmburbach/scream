@@ -88,6 +88,9 @@ struct _GstgScreamTx
   GstClockID clockId;
 
   guint media_src;
+  guint min_bitrate;
+  guint start_bitrate;
+  guint max_bitrate;
 };
 
 struct _GstgScreamTxClass
