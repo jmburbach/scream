@@ -464,19 +464,24 @@ gst_g_scream_tx_chain (GstPad * pad, GstObject * parent, GstBuffer * buf)
 
     switch (filter_->media_src) {
       case 0:
-        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f, 300e3f, 1000e3f, 15e6f, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
       case 1:
-        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f, 300e3f, 500e3f, 5e6f, 1e6f, 0.1f, 0.2f, 0.1f, 0.2f);
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+				filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 1e6f, 0.1f, 0.2f, 0.1f, 0.2f);
         break;
       case 2:
-        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f, 300e3f, 1000e3f, 15e6f, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
       case 3:
-        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f, 300e3f, 1000e3f, 15e6f, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
       case 4:
-        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f, 300e3f, 1000e3f, 15e6f, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
     }
   }
