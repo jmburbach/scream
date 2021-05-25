@@ -78,7 +78,16 @@ enum
   PROP_START_BITRATE,
   PROP_MAX_BITRATE
 };
-#define DEST_HOST "127.0.0.1"
+
+enum
+{
+	MEDIA_SRC_X264ENC = 0,
+	MEDIA_SRC_RPICAMSRC = 1,
+	MEDIA_SRC_UVCH264SRC = 2,
+	MEDIA_SRC_VAAPIH264ENC = 3,
+	MEDIA_SRC_OMXH264ENC = 4,
+	MEDIA_SRC_NONE = 5
+};
 
 /* the capabilities of the inputs and outputs.
  *
@@ -100,14 +109,19 @@ gst_g_scream_tx_class_init (GstgScreamTxClass * klass)
   gobject_class->set_property = gst_g_scream_tx_set_property;
   gobject_class->get_property = gst_g_scream_tx_get_property;
 
+  g_signal_new("on-bitrate-change", G_TYPE_FROM_CLASS(klass),
+	G_SIGNAL_RUN_LAST,
+	G_STRUCT_OFFSET(GstgScreamTxClass, gst_g_scream_tx_on_bitrate_change), NULL, NULL,
+	g_cclosure_marshal_generic, G_TYPE_NONE, 2, G_TYPE_UINT, G_TYPE_UINT);
+
   g_object_class_install_property (gobject_class, PROP_SILENT,
       g_param_spec_boolean ("silent", "Silent", "Produce verbose output?",
           FALSE, G_PARAM_READWRITE));
 
   g_object_class_install_property (gobject_class, PROP_MEDIA_SRC,
       g_param_spec_uint ("media-src", "Media source",
-        "0=x264enc, 1=rpicamsrc, 2=uvch264src, 3=vaapih264enc, 4=omxh264enc",
-        0, 4, 0,
+        "0=x264enc, 1=rpicamsrc, 2=uvch264src, 3=vaapih264enc, 4=omxh264enc, 5=manual (on-bitrate-change signal only)",
+        0, 5, 0,
         G_PARAM_READWRITE));
   
   g_object_class_install_property(gobject_class, PROP_MIN_BITRATE,
@@ -344,14 +358,12 @@ on_receiving_rtcp(GObject *session, GstBuffer *buffer, gboolean early, GObject *
           pthread_mutex_lock(&filter_->lock_scream);
           int rate = (int) (filter_->screamTx->getTargetBitrate(ssrc_h));
           switch (filter_->media_src) {
-            case 0: // x264enc
-            case 3: // vaapih264enc
+            case MEDIA_SRC_X264ENC: // x264enc
+            case MEDIA_SRC_VAAPIH264ENC: // vaapih264enc
               rate /= 1000;
               break;
-            case 1: // rpicamsrc
-            case 2: // uvch264src
-            case 4: // omxh264enc
-              break;
+			default:
+			  break;
           }
           pthread_mutex_unlock(&filter_->lock_scream);
 
@@ -361,19 +373,21 @@ on_receiving_rtcp(GObject *session, GstBuffer *buffer, gboolean early, GObject *
             //int qp = 20+20*(int(time/5) % 2)  ;
             filter_->lastRateChangeT = time;
             switch (filter_->media_src) {
-              case 0:
-              case 1:
-              case 3:
+			  case MEDIA_SRC_X264ENC:
+              case MEDIA_SRC_RPICAMSRC:
+              case MEDIA_SRC_VAAPIH264ENC:
                 g_object_set(G_OBJECT(filter_->encoder), "bitrate", rate, NULL);
                 break;
-              case 2:
+              case MEDIA_SRC_UVCH264SRC:
                 g_object_set(G_OBJECT(filter_->encoder), "average-bitrate", rate, NULL);
                 g_object_set(G_OBJECT(filter_->encoder), "peak-bitrate", rate, NULL);
                 break;
-              case 4:
+			  case MEDIA_SRC_OMXH264ENC:
                 g_object_set(G_OBJECT(filter_->encoder), "target-bitrate", rate, NULL);
                 break;
             }
+		    
+			g_signal_emit_by_name(filter, "on-bitrate-change", rate, ssrc_h);
 
             char buf2[1000];
             pthread_mutex_lock(&filter_->lock_scream);
@@ -463,23 +477,27 @@ gst_g_scream_tx_chain (GstPad * pad, GstObject * parent, GstBuffer * buf)
     g_print(" New stream, register !\n");
 
     switch (filter_->media_src) {
-      case 0:
+      case MEDIA_SRC_X264ENC:
         filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
 			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
-      case 1:
+      case MEDIA_SRC_RPICAMSRC:
         filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
 				filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 1e6f, 0.1f, 0.2f, 0.1f, 0.2f);
         break;
-      case 2:
+	  case MEDIA_SRC_UVCH264SRC:
         filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
 			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
-      case 3:
+      case MEDIA_SRC_VAAPIH264ENC:
         filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
 			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
-      case 4:
+      case MEDIA_SRC_OMXH264ENC:
+        filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
+			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
+        break;
+	  case MEDIA_SRC_NONE:
         filter->screamTx->registerNewStream(filter->rtpQueue, ssrc_h, 1.0f,
 			   	filter->min_bitrate, filter->start_bitrate, filter->max_bitrate, 5e6f, 0.3f, 0.2f, 0.1f, 0.2f);
         break;
@@ -570,7 +588,9 @@ gst_g_scream_tx_sink_event (GstPad * pad, GstObject * parent, GstEvent * event)
     g_signal_connect_after((filter->rtpSession), "on-receiving-rtcp", G_CALLBACK(on_receiving_rtcp), filter);
     //g_print("CALLBACK\n");
     filter->encoder = gst_bin_get_by_name_recurse_up(GST_BIN(pipe), "video");
-    g_assert(filter->encoder);
+	if (filter->media_src != MEDIA_SRC_NONE) {
+		g_assert(filter->encoder);
+	}
     
     
     //g_object_set(G_OBJECT(filter->encoder), "bitrate", 200, NULL);
@@ -647,7 +667,7 @@ gscreamtx_init (GstPlugin * gscreamtx)
                    GST_VERSION_MINOR,
                    gscreamtx,
                    "SCReAM sender side",
-                   gscreamtx_init,
+				   gscreamtx_init,
                    VERSION,
                    "LGPL",
                    "GStreamer",

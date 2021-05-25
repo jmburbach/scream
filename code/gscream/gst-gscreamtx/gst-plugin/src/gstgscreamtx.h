@@ -96,6 +96,8 @@ struct _GstgScreamTx
 struct _GstgScreamTxClass
 {
   GstElementClass parent_class;
+
+  void (*gst_g_scream_tx_on_bitrate_change)(GstElement *element, guint bitrate, guint ssrc);
 };
 
 GType gst_g_scream_tx_get_type (void);
