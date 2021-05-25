@@ -387,14 +387,14 @@ on_receiving_rtcp(GObject *session, GstBuffer *buffer, gboolean early, GObject *
                 break;
             }
 		    
-			g_signal_emit_by_name(filter, "on-bitrate-change", rate, ssrc_h);
+			g_signal_emit_by_name(filter_, "on-bitrate-change", rate, ssrc_h);
 
             char buf2[1000];
             pthread_mutex_lock(&filter_->lock_scream);
             filter_->screamTx->getShortLog(time, buf2);
             pthread_mutex_unlock(&filter_->lock_scream);
 
-            if (filter_->media_src == 1)
+            if (filter_->media_src == MEDIA_SRC_RPICAMSRC)
               g_object_set(G_OBJECT(filter_->encoder), "annotation-text", buf2, NULL);
 
             g_print("%6.3f %s\n",time,buf2);
@@ -587,8 +587,8 @@ gst_g_scream_tx_sink_event (GstPad * pad, GstObject * parent, GstEvent * event)
 
     g_signal_connect_after((filter->rtpSession), "on-receiving-rtcp", G_CALLBACK(on_receiving_rtcp), filter);
     //g_print("CALLBACK\n");
-    filter->encoder = gst_bin_get_by_name_recurse_up(GST_BIN(pipe), "video");
 	if (filter->media_src != MEDIA_SRC_NONE) {
+		filter->encoder = gst_bin_get_by_name_recurse_up(GST_BIN(pipe), "video");
 		g_assert(filter->encoder);
 	}
     
